@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Lord Anchovy</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #222; color: #fff; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: #333; padding: 20px; border-radius: 8px; }
+        h1 { text-align: center; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input[type="text"], input[type="password"], textarea, input[type="file"] {
+            width: 100%; padding: 10px; margin-top: 5px; border-radius: 4px; border: none; box-sizing: border-box;
+        }
+        button {
+            margin-top: 20px; width: 100%; padding: 12px; background: #4CAF50; color: white; 
+            border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;
+        }
+        button:hover { background: #45a049; }
+        #status { margin-top: 15px; text-align: center; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🐢 Anchovy's Admin</h1>
+        
+        <!-- Token Setup Screen -->
+        <div id="token-setup">
+            <p>Welcome! Paste your GitHub Personal Access Token to unlock the dashboard.</p>
+            <label>GitHub Token:</label>
+            <input type="password" id="pat-input" placeholder="github_pat_...">
+            <button onclick="saveToken()">Unlock Dashboard</button>
+        </div>
+
+        <!-- Main Admin Form -->
+        <div id="admin-form" class="hidden">
+            <label>Post Title:</label>
+            <input type="text" id="post-title" placeholder="e.g., Morning Cats at the Market">
+
+            <label>Your Writing (Story):</label>
+            <textarea id="post-body" rows="5" placeholder="Write about your photo walk here..."></textarea>
+
+            <label>Upload Photo (Will be compressed automatically):</label>
+            <input type="file" id="post-image" accept="image/*">
+
+            <button onclick="publishPost()" id="publish-btn">Publish to Website</button>
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
