@@ -1,29 +1,160 @@
 // --- Configuration ---
-const GITHUB_USERNAME = "anchovycryptid"; // From your screenshot earlier
+const GITHUB_USERNAME = "anchovycryptid";
 const REPO_NAME = "photo-blog";
 
-// Check if token exists when page loads
+let allPosts = []; // Keep track of posts in memory
+
 window.onload = () => {
     const token = localStorage.getItem('github_pat');
     if (token) {
         document.getElementById('token-setup').classList.add('hidden');
         document.getElementById('admin-form').classList.remove('hidden');
+        loadPosts(); // Load the list when unlocked
     }
 };
 
-// Save the token to the browser's local storage
 function saveToken() {
     const input = document.getElementById('pat-input').value.trim();
     if (input.startsWith('github_pat_')) {
         localStorage.setItem('github_pat', input);
         document.getElementById('token-setup').classList.add('hidden');
         document.getElementById('admin-form').classList.remove('hidden');
+        loadPosts();
     } else {
-        alert("That doesn't look like a valid GitHub token. It should start with 'github_pat_'.");
+        alert("Invalid token format.");
     }
 }
 
-// Function to compress the image in the browser
+// Fetch posts and display them in the list
+async function loadPosts() {
+    const token = localStorage.getItem('github_pat');
+    const postsListDiv = document.getElementById('posts-list');
+    
+    try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/data/posts.json`, {
+            headers: { Authorization: `token ${token}` }
+        });
+
+        if (res.status === 404) {
+            postsListDiv.innerHTML = '<p>No posts yet.</p>';
+            return;
+        }
+
+        const data = await res.json();
+        const decodedContent = atob(data.content.replace(/\n/g, ''));
+        allPosts = JSON.parse(decodedContent);
+
+        if (allPosts.length === 0) {
+            postsListDiv.innerHTML = '<p>No posts yet.</p>';
+            return;
+        }
+
+        postsListDiv.innerHTML = '';
+        allPosts.forEach(post => {
+            const div = document.createElement('div');
+            div.className = 'post-item';
+            div.innerHTML = `
+                <h3>${post.title}</h3>
+                <div class="action-btns">
+                    <button class="edit-btn" onclick="editPost(${post.id})">Edit</button>
+                    <button class="delete-btn" onclick="deletePost(${post.id}, '${post.image}')">Delete</button>
+                </div>
+            `;
+            postsListDiv.appendChild(div);
+        });
+
+    } catch (error) {
+        postsListDiv.innerHTML = `<p style="color:red;">Error loading posts: ${error.message}</p>`;
+    }
+}
+
+// Populate form for editing
+function editPost(id) {
+    const post = allPosts.find(p => p.id === id);
+    if (!post) return;
+
+    document.getElementById('form-title').innerText = "Edit Post";
+    document.getElementById('edit-post-id').value = post.id;
+    document.getElementById('edit-image-path').value = post.image;
+    document.getElementById('post-title').value = post.title;
+    document.getElementById('post-body').value = post.body;
+    document.getElementById('post-image').value = ''; // Clear file input
+    
+    document.getElementById('publish-btn').innerText = "Update Post";
+    document.getElementById('cancel-btn').style.display = "block";
+    
+    window.scrollTo(0, 0); // Scroll to top
+}
+
+// Reset form back to "Create" mode
+function resetForm() {
+    document.getElementById('form-title').innerText = "Create a New Post";
+    document.getElementById('edit-post-id').value = '';
+    document.getElementById('edit-image-path').value = '';
+    document.getElementById('post-title').value = '';
+    document.getElementById('post-body').value = '';
+    document.getElementById('post-image').value = '';
+    document.getElementById('publish-btn').innerText = "Publish to Website";
+    document.getElementById('cancel-btn').style.display = "none";
+    document.getElementById('status').innerText = '';
+}
+
+// Delete a post and its image
+async function deletePost(id, imagePath) {
+    if (!confirm("Are you sure you want to delete this post? This cannot be undone.")) return;
+    
+    const token = localStorage.getItem('github_pat');
+    const statusDiv = document.getElementById('status');
+    statusDiv.style.color = "yellow";
+    statusDiv.innerText = "Deleting post... 🗑️";
+
+    try {
+        // 1. Remove post from array and update JSON
+        const updatedPosts = allPosts.filter(p => p.id !== id);
+        const jsonBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(updatedPosts, null, 2))));
+        
+        // Get the current SHA of posts.json
+        const getRes = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/data/posts.json`, {
+            headers: { Authorization: `token ${token}` }
+        });
+        const data = await getRes.json();
+
+        await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/data/posts.json`, {
+            method: 'PUT',
+            headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: `Delete post ID: ${id}`, content: jsonBase64, sha: data.sha })
+        });
+
+        // 2. Delete the image file from GitHub to save space
+        try {
+            const imgRes = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${imagePath}`, {
+                headers: { Authorization: `token ${token}` }
+            });
+            if (imgRes.ok) {
+                const imgData = await imgRes.json();
+                await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${imagePath}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Delete image for post: ${id}`, sha: imgData.sha })
+                });
+            }
+        } catch (imgErr) {
+            console.warn("Could not delete image, but post was deleted.");
+        }
+
+        statusDiv.style.color = "#4CAF50";
+        statusDiv.innerText = "✅ Post deleted!";
+        loadPosts(); // Refresh the list
+        
+        setTimeout(() => { statusDiv.innerText = ""; }, 3000);
+
+    } catch (error) {
+        statusDiv.style.color = "red";
+        statusDiv.innerText = `❌ Error deleting: ${error.message}`;
+    }
+}
+
+// Function to compress the image
 function compressImage(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -34,19 +165,12 @@ function compressImage(file) {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 const MAX_WIDTH = 1200;
-                let scaleSize = 1;
-                if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
-                
+                let scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
                 canvas.width = img.width * scaleSize;
                 canvas.height = img.height * scaleSize;
-                
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // Compress to JPEG at 70% quality
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                const base64Data = dataUrl.split(',')[1]; 
-                resolve(base64Data);
+                resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
             };
         };
     });
@@ -57,11 +181,8 @@ async function commitToGitHub(path, contentBase64, commitMessage, fileSha = null
     const token = localStorage.getItem('github_pat');
     const url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${path}`;
     
-    // If we don't have a SHA, check if the file already exists
     if (!fileSha) {
-        const getRes = await fetch(url, {
-            headers: { Authorization: `token ${token}` }
-        });
+        const getRes = await fetch(url, { headers: { Authorization: `token ${token}` } });
         if (getRes.ok) {
             const data = await getRes.json();
             fileSha = data.sha;
@@ -70,15 +191,8 @@ async function commitToGitHub(path, contentBase64, commitMessage, fileSha = null
 
     const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-            Authorization: `token ${token}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            message: commitMessage,
-            content: contentBase64,
-            sha: fileSha 
-        })
+        headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: commitMessage, content: contentBase64, sha: fileSha })
     });
 
     if (!response.ok) {
@@ -88,40 +202,49 @@ async function commitToGitHub(path, contentBase64, commitMessage, fileSha = null
     return await response.json();
 }
 
-// Main function to publish the post
+// Publish or Update a post
 async function publishPost() {
     const token = localStorage.getItem('github_pat');
+    const id = document.getElementById('edit-post-id').value;
+    const oldImagePath = document.getElementById('edit-image-path').value;
     const title = document.getElementById('post-title').value;
     const body = document.getElementById('post-body').value;
     const fileInput = document.getElementById('post-image').files[0];
     const statusDiv = document.getElementById('status');
     const btn = document.getElementById('publish-btn');
 
-    if (!title || !body || !fileInput) {
-        alert("Please fill in all fields and select an image.");
+    // Validation
+    if (!title || !body) {
+        alert("Please fill in Title and Story.");
+        return;
+    }
+    // If creating new, image is required. If editing, image is optional.
+    if (!id && !fileInput) {
+        alert("Please select an image for the new post.");
         return;
     }
 
     btn.disabled = true;
     statusDiv.style.color = "yellow";
-    statusDiv.innerText = "Compressing image... ⏳";
+    statusDiv.innerText = "Processing... ⏳";
 
     try {
-        // 1. Compress and Upload Image
-        const imageBase64 = await compressImage(fileInput);
+        let finalImagePath = oldImagePath;
         const timestamp = Date.now();
-        const imagePath = `images/${timestamp}.jpg`;
 
-        statusDiv.innerText = "Uploading photo to GitHub... 📸";
-        await commitToGitHub(imagePath, imageBase64, `Upload photo: ${title}`);
+        // 1. Handle Image Upload (if a new one was selected)
+        if (fileInput) {
+            statusDiv.innerText = "Compressing and uploading photo... 📸";
+            const imageBase64 = await compressImage(fileInput);
+            finalImagePath = `images/${timestamp}.jpg`;
+            await commitToGitHub(finalImagePath, imageBase64, `Upload photo: ${title}`);
+        }
 
         statusDiv.innerText = "Saving story to database... 📝";
 
-        // 2. Fetch current posts.json
+        // 2. Handle JSON Update
         const postsUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/data/posts.json`;
-        const getPostsRes = await fetch(postsUrl, {
-            headers: { Authorization: `token ${token}` }
-        });
+        const getPostsRes = await fetch(postsUrl, { headers: { Authorization: `token ${token}` } });
         
         let posts = [];
         let postsSha = null;
@@ -129,34 +252,33 @@ async function publishPost() {
         if (getPostsRes.ok) {
             const data = await getPostsRes.json();
             postsSha = data.sha;
-            const decodedContent = atob(data.content.replace(/\n/g, ''));
-            posts = JSON.parse(decodedContent);
-        } else if (getPostsRes.status !== 404) {
-            throw new Error("Could not fetch posts.json");
+            posts = JSON.parse(atob(data.content.replace(/\n/g, '')));
         }
 
-        // 3. Add new post
-        const newPost = {
-            id: timestamp,
-            title: title,
-            image: imagePath, 
-            body: body
-        };
-        posts.unshift(newPost); 
+        if (id) {
+            // Edit existing post
+            const index = posts.findIndex(p => p.id == id);
+            if (index !== -1) {
+                posts[index] = { id: Number(id), title: title, image: finalImagePath, body: body };
+            }
+        } else {
+            // Create new post
+            const newPost = { id: timestamp, title: title, image: finalImagePath, body: body };
+            posts.unshift(newPost);
+        }
 
-        // 4. Upload updated posts.json
         const updatedJsonString = JSON.stringify(posts, null, 2);
         const jsonBase64 = btoa(unescape(encodeURIComponent(updatedJsonString)));
         
-        await commitToGitHub('data/posts.json', jsonBase64, `New post: ${title}`, postsSha);
+        await commitToGitHub('data/posts.json', jsonBase64, id ? `Update post: ${title}` : `New post: ${title}`, postsSha);
 
         statusDiv.style.color = "#4CAF50";
-        statusDiv.innerText = "✅ Success! Post published. Check your live site in 1 minute.";
+        statusDiv.innerText = "✅ Success! Website updating in 1 minute.";
         
-        // Clear form
-        document.getElementById('post-title').value = '';
-        document.getElementById('post-body').value = '';
-        document.getElementById('post-image').value = '';
+        resetForm(); // Clear the form
+        loadPosts(); // Refresh the list
+
+        setTimeout(() => { statusDiv.innerText = ""; }, 5000);
 
     } catch (error) {
         statusDiv.style.color = "red";
