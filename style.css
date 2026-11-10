@@ -11,7 +11,6 @@ body {
     color: #111;
 }
 
-/* --- The Hero Section --- */
 .hero {
     height: 100vh;
     display: flex;
@@ -20,22 +19,13 @@ body {
     align-items: center;
     text-align: center;
     position: relative;
-    /* 
-       ⚠️ REPLACE THE URL BELOW WITH YOUR TURTLE BACKGROUND IMAGE URL 
-       For now, this is a light gray placeholder.
-    */
-    background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop'); 
-    background-size: cover;
+    
+    /* This is your turtle image! */
+    background-image: url('https://raw.githubusercontent.com/anchovycryptid/photo-blog/main/anchovy_turtle.png'); 
+    background-color: #ffffff; /* White background */
+    background-size: 300px; /* Makes the turtles small so they tile nicely */
+    background-repeat: repeat; /* Repeats the turtles across the screen */
     background-position: center;
-}
-
-/* Add a slight white overlay to make the text readable */
-.hero::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.6); 
-    z-index: 1;
 }
 
 .hero-content {
