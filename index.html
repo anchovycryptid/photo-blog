@@ -3,19 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anchovy's Photo Walks</title>
-    <!-- This connects your CSS file -->
+    <title>Lord Anchovy</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for that Editorial look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <nav>Anchovy's Photo Walks</nav>
+    <!-- The Glassmorphism Nav (Hidden until scroll) -->
+    <nav id="main-nav" class="hidden-nav">
+        <div class="nav-brand">Lord Anchovy</div>
+        <div class="nav-links">
+            <a href="#" class="active" onclick="filterPosts('main', this)">Main</a>
+            <a href="#" onclick="filterPosts('food', this)">Food</a>
+        </div>
+    </nav>
 
-    <div class="container">
+    <!-- The Hero Landing Section -->
+    <header class="hero" id="hero">
+        <!-- The turtle background will go here via CSS -->
+        <div class="hero-content">
+            <h1 class="editorial-title">Lord Anchovy</h1>
+            <p class="hero-subtitle">Photo Walks & Food Reviews</p>
+            
+            <div class="social-links">
+                <!-- TikTok -->
+                <a href="#" target="_blank" aria-label="TikTok">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12.5 2h3.3v4.4c1.3-1.1 3-1.7 4.7-1.8v4.4c-2.4.1-4.3 1.4-5.3 3.1-1 1.7-1.2 3.8-.8 5.8.4 2 1.6 3.7 3.3 4.8l.3.2v4.5c-3.7-.4-7.1-2.3-9.3-5.4-2.1-3.1-2.8-7.1-2.1-10.8.7-3.7 3.1-6.9 6.1-8.7V2z"/></svg>
+                </a>
+                <!-- Instagram -->
+                <a href="#" target="_blank" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                </a>
+                <!-- YouTube -->
+                <a href="#" target="_blank" aria-label="YouTube">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+                </a>
+            </div>
+        </div>
+        <div class="scroll-indicator">Scroll to explore ↓</div>
+    </header>
+
+    <!-- The Main Grid Section -->
+    <main class="container">
         <div class="grid" id="photo-grid">
             <!-- Photos will be injected here by JavaScript -->
         </div>
-    </div>
+    </main>
 
     <!-- The Popup Modal -->
     <div class="modal" id="photo-modal">
@@ -29,7 +65,6 @@
         </div>
     </div>
 
-    <!-- This connects your JavaScript file -->
     <script src="script.js"></script>
 </body>
 </html>
