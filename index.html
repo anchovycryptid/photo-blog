@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anchovy's Photo Walks</title>
+    <!-- This connects your CSS file -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav>Anchovy's Photo Walks</nav>
+
+    <div class="container">
+        <div class="grid" id="photo-grid">
+            <!-- Photos will be injected here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- The Popup Modal -->
+    <div class="modal" id="photo-modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal">&times;</span>
+            <img id="modal-image" src="" alt="Photo">
+            <div class="modal-text">
+                <h2 id="modal-title"></h2>
+                <p id="modal-body"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- This connects your JavaScript file -->
+    <script src="script.js"></script>
+</body>
+</html>
